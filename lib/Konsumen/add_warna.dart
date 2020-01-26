@@ -1,0 +1,154 @@
+import 'package:charicedecoratieapp/Konsumen/pesan_paket.dart';
+import 'package:charicedecoratieapp/koneksi.dart';
+import 'package:flutter/material.dart';
+import 'package:autocomplete_textfield/autocomplete_textfield.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:toast/toast.dart';
+void main() {
+  runApp(ChooseColor());
+}
+
+class ChooseColor extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return new MaterialApp(
+      title: 'Choose New Color',
+      theme: new ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: new MyChooseColor(),
+    );
+  }
+}
+
+class MyChooseColor extends StatefulWidget {
+  @override
+  State<StatefulWidget> createState() => _MyChooseColorState();
+}
+
+class _MyChooseColorState extends State<MyChooseColor> {
+  @override
+  Widget build(BuildContext context) {
+    return new Scaffold(
+      body: add_Warna(),
+    );
+  }
+}
+
+class add_Warna extends StatefulWidget {
+  @override
+  _add_WarnaState createState() => _add_WarnaState();
+}
+
+class _add_WarnaState extends State<add_Warna> {
+  List<String> added = [];
+  String currentText = "";
+  GlobalKey<AutoCompleteTextFieldState<String>> key = new GlobalKey();
+
+  List<String> suggestions = [];
+  
+  final String url = koneksi.connect('getcolorname.php');
+  List colorslah = []; //DEFINE VARIABLE data DENGAN TYPE List AGAR DAPAT MENAMPUNG COLLECTION / ARRAY
+
+  Future<String> getData() async {
+    // MEMINTA DATA KE SERVER DENGAN KETENTUAN YANG DI ACCEPT ADALAH JSON
+    
+    var res = await http.get(Uri.encodeFull(url), headers: { 'accept':'application/json' });
+    if(mounted)
+    {
+      setState(() {
+      
+      //RESPONSE YANG DIDAPATKAN DARI API TERSEBUT DI DECODE
+      var content = json.decode(res.body);
+      //KEMUDIAN DATANYA DISIMPAN KE DALAM VARIABLE data, 
+      //DIMANA SECARA SPESIFIK YANG INGIN KITA AMBIL ADALAH ISI DARI KEY hasil
+      colorslah = content['color'];
+
+      for (var i = 0; i < colorslah.length; i++) {
+
+          suggestions.add(colorslah[i]['name']); 
+        }
+      print(suggestions.toString());
+    });
+    
+    
+    return 'success!';
+    }
+    
+    
+  }
+
+  @override
+  void initState() { 
+    this.getData();
+    super.initState();
+    
+  }
+
+  _add_WarnaState() {
+    textField = SimpleAutoCompleteTextField(
+      key: key,
+      decoration: new InputDecoration(errorText: "Choose Color"),
+      controller: TextEditingController(text: ""),
+      suggestions: suggestions,
+      textChanged: (text) => currentText = text,
+      clearOnSubmit: true,
+      textSubmitted: (text) => setState(() {
+            if (text != "") {
+              added.add(text);
+              print("ini isi item "+text);
+              var url = koneksi.connect('insertcolor.php');
+              http.post(url, body: {"namawarna": text.toString()})
+              .then((response) {
+                print("Response status: ${response.statusCode}");
+                print("Response body: ${response.body}");
+                if(response.body=="sukses")
+                {
+                  Navigator.of(context, rootNavigator: true).pushReplacement(MaterialPageRoute(builder: (context) => new MyPesanPaketKonsumen()));
+                }
+                else
+                {
+                  Toast.show(response.body, context,gravity: Toast.CENTER);
+                }
+              });
+            }
+          }),
+    );
+  }
+
+  
+
+  SimpleAutoCompleteTextField textField;
+  bool showWhichErrorText = false;
+
+  @override
+  Widget build(BuildContext context) {
+    Column body = new Column(children: [
+      new ListTile(
+          title: textField,
+          trailing: new IconButton(
+              icon: new Icon(Icons.add),
+              onPressed: () {
+                textField.triggerSubmitted();
+                showWhichErrorText = !showWhichErrorText;
+                textField.updateDecoration(
+                    decoration: new InputDecoration(
+                        errorText: showWhichErrorText ? "Beans" : "Tomatoes"));
+              })),
+    ]);
+
+    body.children.addAll(added.map((item) {
+
+      
+      return new ListTile(title: new Text(item));
+    }));
+
+    return new Scaffold(
+        resizeToAvoidBottomPadding: false,
+        appBar: new AppBar(
+            title: new Text('Choose New Color'),
+            ),
+        body: body);
+  }
+}
