@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # charicedecoratieapp
 
 A new Flutter project.
@@ -14,3 +15,6 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter, view our
 [online documentation](https://flutter.dev/docs), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+=======
+# charicedecoratieapp
+>>>>>>> 3ebab5affac5f828f5e96fcbc4b706e7b5aa5718
