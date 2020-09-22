@@ -1,100 +1,176 @@
 import 'dart:convert';
 
+import 'package:charicedecoratieapp/Konsumen/home.dart';
+import 'package:charicedecoratieapp/api/messaging.dart';
+import 'package:charicedecoratieapp/koneksi.dart';
+import 'package:datetime_picker_formfield/datetime_picker_formfield.dart';
 import 'package:flutter/material.dart';
-import 'package:toast/toast.dart';
-import 'package:table_calendar/table_calendar.dart';
-import 'package:intl/date_symbol_data_local.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
+import 'package:table_calendar/table_calendar.dart';
 
-
-Map<DateTime, List> _holidays={};
+Map<DateTime, List> _holidays = {};
 void main() {
   runApp(MyReschedule());
-} 
+}
 
 class MyReschedule extends StatelessWidget {
+  String noBooking = "";
+  String user = "";
+  MyReschedule({Key key, this.noBooking, this.user}) : super(key: key);
   @override
   Widget build(BuildContext context) {
-    final appTitle = 'Re Schedule';
+    final appTitle = 'Re Schedule: ' + noBooking;
 
     return MaterialApp(
       title: appTitle,
-      home: Scaffold(
-
-        appBar: AppBar(
-          title: Text(appTitle),
+      home: SafeArea(
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text(appTitle),
+          ),
+          body: Re_Scedule(
+            noBooking: noBooking,
+            user: user,
+          ),
         ),
-
-        body:Re_Scedule() ,
-
       ),
     );
   }
 }
 
 class Re_Scedule extends StatefulWidget {
+  String noBooking = "";
+  String user = "";
+  Re_Scedule({Key key, this.noBooking, this.user}) : super(key: key);
   @override
   _Re_SceduleState createState() => _Re_SceduleState();
 }
 
 class _Re_SceduleState extends State<Re_Scedule> with TickerProviderStateMixin {
-  Map<DateTime, List> _events;
+  Map<DateTime, List> _events = {};
+  List _getTanggal = [];
   List _selectedEvents;
+  List dataBook = [];
+  List profileAdmin = [];
+  var setReschedule = true;
+  String startTime;
+  String endTime;
+  final startTimes = DateTime(2018, 6, 23, 07, 30);
+  final endTimes = DateTime(2018, 6, 23, 22, 01);
+  var setConfirm = true;
+  var dateNow;
+  final format = DateFormat("Hm");
   AnimationController _animationController;
+  List dataLiburAdmin = [];
   CalendarController _calendarController;
-  List dataGoogleCalendar; //DEFINE VARIABLE data DENGAN TYPE List AGAR DAPAT MENAMPUNG COLLECTION / ARRAY
-
+  TextEditingController timeController = new TextEditingController();
+  List dataGoogleCalendar;
+  List dataEventCalendar;
   Future<String> fetchPost() async {
-    final response =
-        await http.get('https://www.googleapis.com/calendar/v3/calendars/en.usa%23holiday%40group.v.calendar.google.com/events?key=AIzaSyDvlHs0BcZVHR_LeME6LLIL-g4HUCqfvrs');
+    final response = await http.get(
+        'https://www.googleapis.com/calendar/v3/calendars/en.indonesian%23holiday%40group.v.calendar.google.com/events?key=AIzaSyDvlHs0BcZVHR_LeME6LLIL-g4HUCqfvrs');
 
     if (response.statusCode == 200) {
-      // If the call to the server was successful, parse the JSON.
       setState(() {
-        //RESPONSE YANG DIDAPATKAN DARI API TERSEBUT DI DECODE
         var content = json.decode(response.body);
-        
-        //KEMUDIAN DATANYA DISIMPAN KE DALAM VARIABLE data, 
-        //DIMANA SECARA SPESIFIK YANG INGIN KITA AMBIL ADALAH ISI DARI KEY hasil
+
         dataGoogleCalendar = content['items'];
         for (var i = 0; i < dataGoogleCalendar.length; i++) {
           var getdate = DateTime.parse(dataGoogleCalendar[i]['start']['date']);
-          _holidays.addAll({DateTime.parse(dataGoogleCalendar[i]['start']['date']): [dataGoogleCalendar[i]['summary']]}); 
-            
-          print('ini Get Data'+getdate.toString());
+          _holidays.addAll({
+            DateTime.parse(dataGoogleCalendar[i]['start']['date']): [
+              dataGoogleCalendar[i]['summary']
+            ]
+          });
+
+          print('ini Get Data' + getdate.toString());
         }
-        print('ini holidays'+_holidays.toString());
+        print('ini holidays' + _holidays.toString());
       });
       return 'sukses';
     } else {
-      // If that call was not successful, throw an error.
+      throw Exception('Failed to load post');
+    }
+  }
+
+  Future<String> fetchDataAdmin() async {
+    final response = await http.get(koneksi
+        .connect('getAdminReschedule.php?no_booking=' + widget.noBooking));
+
+    if (response.statusCode == 200) {
+      setState(() {
+        var content = json.decode(response.body);
+
+        profileAdmin = content['data_admin'];
+      });
+      return 'sukses';
+    } else {
+      throw Exception('Failed to load post');
+    }
+  }
+
+  Future<String> fetchLiburAdmin() async {
+    final response = await http.get(koneksi.connect('getLiburDate.php'));
+
+    if (response.statusCode == 200) {
+      setState(() {
+        var content = json.decode(response.body);
+
+        dataLiburAdmin = content['getLibur'];
+        for (var i = 0; i < dataLiburAdmin.length; i++) {
+          _events.addAll({
+            DateTime.parse(dataLiburAdmin[i]): ["Libur"]
+          });
+        }
+      });
+      return 'sukses';
+    } else {
       throw Exception('Failed to load post');
     }
   }
 
   @override
-  void initState() { 
+  void initState() {
     super.initState();
+
+    Future<String> fetchDataBooking() async {
+      final response = await http.get(
+          koneksi.connect('searchBooking.php?no_booking=' + widget.noBooking));
+
+      if (response.statusCode == 200) {
+        setState(() {
+          var content = json.decode(response.body);
+
+          dataBook = content['searchbooking'];
+        });
+        return 'sukses';
+      } else {
+        throw Exception('Failed to load post');
+      }
+    }
+
+    var isDone = 1;
     final _selectedDay = DateTime.now();
+    dateNow = DateFormat('yyyy-MM-dd').format(_selectedDay);
+
+    startTime = DateFormat("Hm").format(startTimes);
+    endTime = DateFormat("Hm").format(endTimes);
+
     this.fetchPost();
-    
-    _events = {
-      _selectedDay.subtract(Duration(days: 30)): ['Event A0', 'Event B0', 'Event C0'],
-      _selectedDay.subtract(Duration(days: 27)): ['Event A1'],
-      _selectedDay.subtract(Duration(days: 20)): ['Event A2', 'Event B2', 'Event C2', 'Event D2'],
-      _selectedDay.subtract(Duration(days: 16)): ['Event A3', 'Event B3'],
-      _selectedDay.subtract(Duration(days: 10)): ['Event A4', 'Event B4', 'Event C4'],
-      _selectedDay.subtract(Duration(days: 4)): ['Event A5', 'Event B5', 'Event C5'],
-      _selectedDay.subtract(Duration(days: 2)): ['Event A6', 'Event B6'],
-      _selectedDay: ['Event A7', 'Event B7', 'Event C7', 'Event D7'],
-      _selectedDay.add(Duration(days: 1)): ['Event A8', 'Event B8', 'Event C8', 'Event D8'],
-      _selectedDay.add(Duration(days: 3)): Set.from(['Event A9', 'Event A9', 'Event B9']).toList(),
-      _selectedDay.add(Duration(days: 7)): ['Event A10', 'Event B10', 'Event C10'],
-      _selectedDay.add(Duration(days: 11)): ['Event A11', 'Event B11'],
-      _selectedDay.add(Duration(days: 17)): ['Event A12', 'Event B12', 'Event C12', 'Event D12'],
-      _selectedDay.add(Duration(days: 22)): ['Event A13', 'Event B13'],
-      _selectedDay.add(Duration(days: 26)): ['Event A14', 'Event B14', 'Event C14'],
-    };
+    fetchDataBooking();
+    this.fetchDataAdmin();
+    this.fetchLiburAdmin();
+    if (isDone == 1) {
+      setReschedule = true;
+      setConfirm = false;
+      print("isdone 1");
+    } else {
+      setReschedule = false;
+      setConfirm = true;
+      print("isdone lain");
+    }
 
     _selectedEvents = _events[_selectedDay] ?? [];
     _calendarController = CalendarController();
@@ -115,96 +191,163 @@ class _Re_SceduleState extends State<Re_Scedule> with TickerProviderStateMixin {
   }
 
   void _onDaySelected(DateTime day, List events) {
+    dateNow = DateFormat('yyyy-MM-dd').format(day);
     print('CALLBACK: _onDaySelected');
     setState(() {
       _selectedEvents = events;
     });
   }
 
-  void _onVisibleDaysChanged(DateTime first, DateTime last, CalendarFormat format) {
+  void _onVisibleDaysChanged(
+      DateTime first, DateTime last, CalendarFormat format) {
     print('CALLBACK: _onVisibleDaysChanged');
   }
 
   @override
   Widget build(BuildContext context) {
+    DateTime now = DateTime.now();
+    String formattedDate = DateFormat('yyyy-MM-dd').format(now);
     return Container(
       child: Column(
         mainAxisSize: MainAxisSize.max,
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: <Widget>[
-          Align(
-            alignment: Alignment.center, // Align however you like (i.e .centerRight, centerLeft)
-            child: Text("Booking number:"),
+          SizedBox(
+            height: 20,
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: <Widget>[
-              Text('Paket name'),
-              Text('Deluxe')
-            ],
+          //tabel
+          Text("Data Booking", style: TextStyle(fontSize: 20)),
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Colors.black,
+                width: 1,
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Table(children: [
+              TableRow(children: [
+                Text(
+                  "Nama pemesan: ",
+                  style: TextStyle(fontSize: 20),
+                ),
+                Text(
+                  dataBook[0]['nama_pemesan'],
+                  style: TextStyle(fontSize: 20),
+                )
+              ]),
+              TableRow(children: [
+                Text(
+                  "Tanggal acara: ",
+                  style: TextStyle(fontSize: 20),
+                ),
+                Text(
+                  dataBook[0]['tanggal_acara'],
+                  style: TextStyle(fontSize: 20),
+                )
+              ]),
+              TableRow(children: [
+                Text(
+                  "Tanggal bayar: ",
+                  style: TextStyle(fontSize: 20),
+                ),
+                Text(
+                  dataBook[0]['tanggal_bayar'],
+                  style: TextStyle(fontSize: 20),
+                )
+              ]),
+              TableRow(children: [
+                Text(
+                  "Grandtotal: ",
+                  style: TextStyle(fontSize: 20),
+                ),
+                Text(
+                  dataBook[0]['grandtotal'],
+                  style: TextStyle(fontSize: 20),
+                )
+              ]),
+              TableRow(children: [
+                Text(
+                  "Tipe pembayaran: ",
+                  style: TextStyle(fontSize: 20),
+                ),
+                Text(
+                  dataBook[0]['nama_pembayaran'],
+                  style: TextStyle(fontSize: 20),
+                )
+              ]),
+            ]),
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: <Widget>[
-              Text('Name that order: '),
-              Text('Dan')
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: <Widget>[
-              Text('Payment date: '),
-              Text('xxxx-xx-xx')
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: <Widget>[
-              Text('Grand total: '),
-              Text('Rp.1000')
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: <Widget>[
-              Text('Type of payment: '),
-              Text('Transfer')
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: <Widget>[
-              Text('Status order: '),
-              Text('Down Payment')
-            ],
-          ),
+
           _buildTableCalendarWithBuilders(),
-          RaisedButton(elevation: 0.0,
-            color: Colors.blueAccent,
-            child: Text('Re Schedule',),
-            onPressed: (){
-              Toast.show('ini bisa ditekan. Yeays', context);
+          const SizedBox(height: 8.0),
+
+          Text("Jam acara:"),
+          DateTimeField(
+            controller: timeController,
+            format: format,
+            onShowPicker: (context, currentValue) async {
+              final time = await showTimePicker(
+                context: context,
+                initialTime: TimeOfDay.fromDateTime(currentValue ?? startTimes),
+              );
+              DateTime today = DateTime(2019, 9, 7, time.hour, time.minute);
+              String todays = DateFormat("Hm").format(today);
+              DateTime getStart = DateFormat("hh:mm").parse(startTime);
+              DateTime getEnd = DateFormat("hh:mm").parse(endTime);
+              DateTime getToday = DateFormat("hh:mm").parse(todays);
+              if (getToday.isAfter(getStart) && getToday.isBefore(getEnd)) {
+                return DateTimeField.convert(time);
+              } else {
+                Fluttertoast.showToast(
+                    msg: "Hanya menerima dari jam 7:30 sampai 22:00",
+                    timeInSecForIosWeb: 10,
+                    toastLength: Toast.LENGTH_LONG);
+              }
             },
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: <Widget>[
-              RaisedButton(elevation: 0.0,
-                color: Colors.blueAccent,
-                child: Text('Confirm',),
-                onPressed: (){
-                  Toast.show('ini bisa ditekan. Yeays', context);
-                },
+          RaisedButton(
+              elevation: 0.0,
+              color: Colors.blueAccent,
+              child: Text(
+                'Re Schedule',
               ),
-              RaisedButton(elevation: 0.0,
-                color: Colors.blueAccent,
-                child: Text('Cancel',),
-                onPressed: (){
-                  Toast.show('ini bisa ditekan. Yeays', context);
-                },
-              ),
-            ],
-          ),
+              onPressed: setReschedule
+                  ? () {
+                      DateTime date1 = DateTime.parse(dateNow);
+                      DateTime date2 = DateTime.parse(formattedDate);
+                      final differences = date1.difference(date2).inDays;
+                      if (differences <= 1) {
+                        Fluttertoast.showToast(
+                            msg: "Minimal 2 hari dari hari ini");
+                      } else {
+                        if (timeController.text.toString().isEmpty) {
+                          Fluttertoast.showToast(msg: "Silahkan isi jam acara");
+                        } else {
+                          var url = koneksi.connect('CheckBarangReScedule.php');
+                          http.post(url, body: {
+                            "date": dateNow.toString(),
+                            "time": timeController.text.toString(),
+                            "noBooking": widget.noBooking,
+                          }).then((response) async {
+                            print("Response status: ${response.statusCode}");
+                            print("Response body: ${response.body}");
+                            if (response.body != "sukses") {
+                              Fluttertoast.showToast(msg: response.body);
+                            } else {
+                              Fluttertoast.showToast(msg: "Sukses");
+                              sendNotificationReschedule(dateNow.toString());
+                              Navigator.of(context, rootNavigator: true)
+                                  .pushReplacement(MaterialPageRoute(
+                                      builder: (context) => new Home(
+                                            value: widget.user.toString(),
+                                          )));
+                            }
+                          });
+                        }
+                      }
+                    }
+                  : null),
         ],
       ),
     );
@@ -299,20 +442,23 @@ class _Re_SceduleState extends State<Re_Scedule> with TickerProviderStateMixin {
       onVisibleDaysChanged: _onVisibleDaysChanged,
     );
   }
+
   Widget _buildEventsMarker(DateTime date, List events) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       decoration: BoxDecoration(
         shape: BoxShape.rectangle,
         color: _calendarController.isSelected(date)
-            ? Colors.brown[500]
-            : _calendarController.isToday(date) ? Colors.brown[300] : Colors.blue[400],
+            ? Colors.red[300]
+            : _calendarController.isToday(date)
+                ? Colors.red[500]
+                : Colors.red[500],
       ),
       width: 16.0,
       height: 16.0,
       child: Center(
         child: Text(
-          '${events.length}',
+          '#',
           style: TextStyle().copyWith(
             color: Colors.white,
             fontSize: 12.0,
@@ -328,5 +474,41 @@ class _Re_SceduleState extends State<Re_Scedule> with TickerProviderStateMixin {
       size: 20.0,
       color: Colors.blueGrey[800],
     );
+  }
+
+  Widget _buildEventList() {
+    return ListView(
+      children: _selectedEvents
+          .map((event) => Container(
+              decoration: BoxDecoration(
+                border: Border.all(width: 0.8),
+                borderRadius: BorderRadius.circular(12.0),
+              ),
+              margin:
+                  const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+              child: ListTile(
+                title: Text(event.toString()),
+                onTap: () => print(_selectedEvents.toString() +
+                    ' disebelah adalah isi _event $event tapped!'),
+              )))
+          .toList(),
+    );
+  }
+
+  Future sendNotificationReschedule(String dates1) async {
+    final response = await Messaging.sendTo(
+      title: "Booking: " + widget.noBooking,
+      body: "Booking ini telah diganti jadwal acaranya menjadi " +
+          dates1 +
+          ". Silahkan diliat booking tersebut.",
+      fcmToken: profileAdmin[0]['token'],
+    );
+
+    if (response.statusCode != 200) {
+      Scaffold.of(context).showSnackBar(SnackBar(
+        content:
+            Text('[${response.statusCode}] Error message: ${response.body}'),
+      ));
+    }
   }
 }

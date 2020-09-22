@@ -1,9 +1,9 @@
 import 'package:charicedecoratieapp/widgets/messaging_widget.dart';
 import 'package:flutter/material.dart';
 
-void main() => runApp(MyApp());
+void main() => runApp(MyAppNotificationGet());
 
-class MyApp extends StatelessWidget {
+class MyAppNotificationGet extends StatelessWidget {
   final String appTitle = 'Firebase messaging';
   @override
   Widget build(BuildContext context) => MaterialApp(

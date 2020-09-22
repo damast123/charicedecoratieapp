@@ -1,141 +1,300 @@
 import 'dart:convert';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:charicedecoratieapp/Konsumen/detail_paket.dart';
+import 'package:charicedecoratieapp/Konsumen/home.dart';
 import 'package:charicedecoratieapp/koneksi.dart';
+import 'package:charicedecoratieapp/welcomescreen.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:http/http.dart' as http;
-import 'package:toast/toast.dart';
-
 
 void main() {
   runApp(home_paket());
 }
+
 String v = "";
+
 class home_paket extends StatefulWidget {
-  final List value;
-  final double murah;
-  final double mahal;
-  final String filter;
-  
-  const home_paket({Key key, this.value,this.murah,this.mahal,this.filter}) : super(key:key);
+  List value = [];
+  double murah = 0.0;
+  double mahal = 0.0;
+  String filter = "";
+  String user = "";
+
+  home_paket(
+      {Key key, this.value, this.murah, this.mahal, this.filter, this.user})
+      : super(key: key);
   @override
   _home_paketState createState() => _home_paketState();
 }
 
 class _home_paketState extends State<home_paket> {
-  
-  
-  List paket; //DEFINE VARIABLE data DENGAN TYPE List AGAR DAPAT MENAMPUNG COLLECTION / ARRAY
+  List paket = [];
+  String url;
+  @override
+  void initState() {
+    List sa = widget.value;
+    if (sa.isEmpty) {
+      url = koneksi.connect('get_paket_harga.php?murah=' +
+          widget.murah.toString() +
+          '&mahal=' +
+          widget.mahal.toString());
+    } else {
+      url = koneksi.connect('getPaket.php?id=' +
+          sa.toString() +
+          '&murah=' +
+          widget.murah.toString() +
+          '&mahal=' +
+          widget.mahal.toString() +
+          '&temp=' +
+          widget.filter);
+    }
+    Future<String> getData() async {
+      Response res = await dio.get(url);
 
-  //ini cara gunakan get http://localhost:9090/ta/getPaket.php?id=1
-    @override
-    void initState() {
-      List sa = widget.value;
-      final String url = koneksi.connect('getPaket.php?id='+sa.toString()+'&murah='+widget.murah.toString()+'&mahal='+widget.mahal.toString()+'&temp='+widget.filter);
-      Future<String> getData() async {
-    
-      var res = await http.get(Uri.encodeFull(url), headers: { 'accept':'application/json' });
-        if(mounted)
-        {
-          setState(() {
-          
-          //RESPONSE YANG DIDAPATKAN DARI API TERSEBUT DI DECODE
-          var content = json.decode(res.body);
-          //KEMUDIAN DATANYA DISIMPAN KE DALAM VARIABLE data, 
-          //DIMANA SECARA SPESIFIK YANG INGIN KITA AMBIL ADALAH ISI DARI KEY hasil
+      if (mounted) {
+        setState(() {
+          var content = json.decode(res.data);
+
           paket = content['paket'];
         });
         return 'success!';
-        }
-        
       }
-      getData();
-      super.initState();
-            
     }
+
+    getData();
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      
       title: 'Welcome to Charicedecoratie',
-      home: Scaffold(
-        appBar: AppBar(
-          title: Text('Home Paket'),
-          
-        ),
-        body: Container(
-          margin: EdgeInsets.all(10.0), //SET MARGIN DARI CONTAINER
-          child: paket == null ? Center(child: Text('Kosong'),) : ListView.builder( //MEMBUAT LISTVIEW
-            itemCount: paket.length, //KETIKA DATANYA KOSONG KITA ISI DENGAN 0 DAN APABILA ADA MAKA KITA COUNT JUMLAH DATA YANG ADA
-            itemBuilder: (BuildContext context, int index) { 
-              return Container(
-                child:GestureDetector(
-                  onTap: (){
-                    
-                    Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(builder: (context) => new MyDetailPaketKonsumen(value: paket[index]['idpaket'],id:index,)));
-                  },
-                  child: Card(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min, children: <Widget>[
-                      //ListTile MENGELOMPOKKAN WIDGET MENJADI BEBERAPA BAGIAN
-                      ListTile(
-                        leading: 
-                        //title TAMPIL DITENGAH SETELAH leading
-                        // VALUENYA ADALAH WIDGET TEXT
-                        // YANG BERISI NAMA SURAH
-                        Text("Gambar", style: TextStyle(fontSize: 25.0, fontWeight: FontWeight.bold),),
-                        title: Text(paket[index]['nama_paket'], style: TextStyle(fontSize: 25.0, fontWeight: FontWeight.bold),),
-                        //subtitle TAMPIL TEPAT DIBAWAH title
-                        subtitle: Column(children: <Widget>[ //MENGGUNAKAN COLUMN
-                          //DIMANA MASING-MASING COLUMN TERDAPAT ROW
-                          Row(
-                            children: <Widget>[
-                              //MENAMPILKAN TEXT arti
-                              Text('Rating : ', style: TextStyle(fontWeight: FontWeight.bold),),
-                              //MENAMPILKAN TEXT DARI VALUE arti
-                              Text(paket[index]['rating'].toString(), style: TextStyle(fontStyle: FontStyle.italic, fontSize: 15.0),),
-                            ],
+      home: SafeArea(
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text('Home Paket'),
+          ),
+          body: WillPopScope(
+            child: Container(
+              margin: EdgeInsets.all(10.0),
+              child: paket == null
+                  ? Center(
+                      child: Text('Kosong'),
+                    )
+                  : ListView.builder(
+                      itemCount: paket.length,
+                      itemBuilder: (BuildContext context, int index) {
+                        return Container(
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.of(context, rootNavigator: true).push(
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          new MyDetailPaketKonsumen(
+                                            val: paket[index]['idpaket'],
+                                          )));
+                            },
+                            child: Card(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: <Widget>[
+                                  if (paket[index]['nama_gambar'] != null)
+                                    ListTile(
+                                      leading: CachedNetworkImage(
+                                        height: 100,
+                                        width: 100,
+                                        fit: BoxFit.cover,
+                                        imageUrl: koneksi.getImagePaket(
+                                            paket[index]['nama_gambar']),
+                                        placeholder: (context, url) =>
+                                            new CircularProgressIndicator(),
+                                        errorWidget: (context, url, error) =>
+                                            new Icon(Icons.error),
+                                      ),
+                                      title: Text(
+                                        paket[index]['nama_paket'],
+                                        style: TextStyle(
+                                            fontSize: 25.0,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                      subtitle: Column(
+                                        children: <Widget>[
+                                          Row(
+                                            children: <Widget>[
+                                              Text("Rating:"),
+                                              AbsorbPointer(
+                                                absorbing: false,
+                                                child: RatingBar(
+                                                  itemSize:
+                                                      MediaQuery.of(context)
+                                                              .size
+                                                              .width /
+                                                          40,
+                                                  initialRating: double.parse(
+                                                      paket[index]['rating']),
+                                                  direction: Axis.horizontal,
+                                                  allowHalfRating: true,
+                                                  itemCount: 5,
+                                                  itemPadding:
+                                                      EdgeInsets.symmetric(
+                                                          horizontal: 4.0),
+                                                  itemBuilder: (context, _) =>
+                                                      Icon(
+                                                    Icons.star,
+                                                    color: Colors.amber,
+                                                  ),
+                                                ),
+                                              ),
+                                              Text(paket[index]['rating'] +
+                                                  '/5'),
+                                            ],
+                                          ),
+                                          Row(
+                                            children: <Widget>[
+                                              Text(
+                                                'For many people : ',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                              ),
+                                              Text(paket[index]
+                                                  ['untuk_berapa_orang'])
+                                            ],
+                                          ),
+                                          Row(
+                                            children: <Widget>[
+                                              Text(
+                                                'Jenis : ',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                              ),
+                                              Text(paket[index]['nama_jenis'])
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                      trailing: Icon(Icons.keyboard_arrow_right,
+                                          color: Colors.black, size: 30.0),
+                                      onTap: () {
+                                        Navigator.of(context,
+                                                rootNavigator: true)
+                                            .push(MaterialPageRoute(
+                                                builder: (context) =>
+                                                    new MyDetailPaketKonsumen(
+                                                      val: paket[index]
+                                                          ['idpaket'],
+                                                    )));
+                                      },
+                                    ),
+                                  if (paket[index]['nama_gambar'] == null)
+                                    ListTile(
+                                      leading: SizedBox(
+                                        width: 100,
+                                        height: 100,
+                                        child: Text("Tidak ada gambar"),
+                                      ),
+                                      title: Text(
+                                        paket[index]['nama_paket'],
+                                        style: TextStyle(
+                                            fontSize: 25.0,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                      subtitle: Column(
+                                        children: <Widget>[
+                                          Row(
+                                            children: <Widget>[
+                                              Text("Rating"),
+                                              AbsorbPointer(
+                                                absorbing: true,
+                                                child: RatingBar(
+                                                  initialRating: double.parse(
+                                                      paket[index]['rating']),
+                                                  direction: Axis.horizontal,
+                                                  allowHalfRating: true,
+                                                  itemCount: 5,
+                                                  itemPadding:
+                                                      EdgeInsets.symmetric(
+                                                          horizontal: 4.0),
+                                                  itemBuilder: (context, _) =>
+                                                      Icon(
+                                                    Icons.star,
+                                                    color: Colors.amber,
+                                                  ),
+                                                  onRatingUpdate: (rating) {
+                                                    print(rating);
+                                                  },
+                                                ),
+                                              ),
+                                              Text(paket[index]['rating'] +
+                                                  '/5'),
+                                            ],
+                                          ),
+                                          Row(
+                                            children: <Widget>[
+                                              Text(
+                                                'For many people : ',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                              ),
+                                              Text(paket[index]
+                                                  ['untuk_berapa_orang'])
+                                            ],
+                                          ),
+                                          Row(
+                                            children: <Widget>[
+                                              Text(
+                                                'Jenis : ',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                              ),
+                                              Text(paket[index]['nama_jenis'])
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                      trailing: Icon(Icons.keyboard_arrow_right,
+                                          color: Colors.black, size: 30.0),
+                                      onTap: () {
+                                        Navigator.of(context,
+                                                rootNavigator: true)
+                                            .push(MaterialPageRoute(
+                                                builder: (context) =>
+                                                    new MyDetailPaketKonsumen(
+                                                      val: paket[index]
+                                                          ['idpaket'],
+                                                    )));
+                                      },
+                                    ),
+                                ],
+                              ),
+                            ),
                           ),
-                          //ROW SELANJUTNYA MENAMPILKAN JUMLAH AYAT
-                          Row(
-                            children: <Widget>[
-                              Text('For many people : ', style: TextStyle(fontWeight: FontWeight.bold),),
-                              //DARI INDEX ayat
-                              Text(paket[index]['untuk_berapa_orang'])
-                            ],
-                          ),
-                          //MENAMPILKAN DIMANA SURAH TERSEBUT DITURUNKAN
-                          Row(
-                            children: <Widget>[
-                              Text('Jenis : ', style: TextStyle(fontWeight: FontWeight.bold),),
-                              //DENGAN INDEX type
-                              Text(paket[index]['nama_jenis'])
-                            ],
-                          ),
-                        ],),
-                        trailing:
-                            Icon(Icons.keyboard_arrow_right, color: Colors.black, size: 30.0),
-                        onTap: () {
-                        },
-                      ),
-                      
-                    ],),
-                  ),
-                ),
-                
-              );
-              
-            }),
+                        );
+                      }),
+            ),
+            onWillPop: () {
+              Navigator.of(context, rootNavigator: true)
+                  .pushReplacement(MaterialPageRoute(
+                      builder: (context) => new Home(
+                            value: widget.user.toString(),
+                          )));
+            },
+          ),
         ),
-        ),
+      ),
     );
   }
   // Widget slideList(){
   //   new Slidable(
   //     delegate: new SlidableDrawerDelegate(),
   //     actionExtentRatio: 0.25,
-      
+
   //     actions: <Widget>[
   //       new IconSlideAction(
   //         caption: 'Archive',
@@ -166,5 +325,5 @@ class _home_paketState extends State<home_paket> {
   //     ],
   //   );
   // }
-  
+
 }

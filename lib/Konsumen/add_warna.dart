@@ -1,10 +1,16 @@
+import 'dart:convert';
+
+import 'package:autocomplete_textfield/autocomplete_textfield.dart';
 import 'package:charicedecoratieapp/Konsumen/pesan_paket.dart';
 import 'package:charicedecoratieapp/koneksi.dart';
+import 'package:charicedecoratieapp/welcomescreen.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:autocomplete_textfield/autocomplete_textfield.dart';
-import 'dart:convert';
+import 'package:flutter_launch/flutter_launch.dart';
 import 'package:http/http.dart' as http;
-import 'package:toast/toast.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:after_layout/after_layout.dart';
+
 void main() {
   runApp(ChooseColor());
 }
@@ -41,49 +47,58 @@ class add_Warna extends StatefulWidget {
   _add_WarnaState createState() => _add_WarnaState();
 }
 
-class _add_WarnaState extends State<add_Warna> {
+class _add_WarnaState extends State<add_Warna>
+    with AfterLayoutMixin<add_Warna> {
   List<String> added = [];
   String currentText = "";
   GlobalKey<AutoCompleteTextFieldState<String>> key = new GlobalKey();
 
+  @override
+  void afterFirstLayout(BuildContext context) {
+    showGoToChat();
+  }
+
+  void showGoToChat() {
+    showDialog(
+      context: context,
+      builder: (context) => new AlertDialog(
+        content: new Text('Silahkan chat terlebih dahulu kepada admin.'),
+        actions: <Widget>[
+          new FlatButton(
+              child: new Text('DISMISS'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                whatsAppOpen();
+              })
+        ],
+      ),
+    );
+  }
+
   List<String> suggestions = [];
-  
+
   final String url = koneksi.connect('getcolorname.php');
-  List colorslah = []; //DEFINE VARIABLE data DENGAN TYPE List AGAR DAPAT MENAMPUNG COLLECTION / ARRAY
+  List colorslah = [];
 
   Future<String> getData() async {
-    // MEMINTA DATA KE SERVER DENGAN KETENTUAN YANG DI ACCEPT ADALAH JSON
-    
-    var res = await http.get(Uri.encodeFull(url), headers: { 'accept':'application/json' });
-    if(mounted)
-    {
-      setState(() {
-      
-      //RESPONSE YANG DIDAPATKAN DARI API TERSEBUT DI DECODE
-      var content = json.decode(res.body);
-      //KEMUDIAN DATANYA DISIMPAN KE DALAM VARIABLE data, 
-      //DIMANA SECARA SPESIFIK YANG INGIN KITA AMBIL ADALAH ISI DARI KEY hasil
+    Response response = await dio.get(url);
+    print(response.data.toString());
+    setState(() {
+      var content = json.decode(response.data);
+
       colorslah = content['color'];
-
-      for (var i = 0; i < colorslah.length; i++) {
-
-          suggestions.add(colorslah[i]['name']); 
-        }
-      print(suggestions.toString());
     });
-    
-    
-    return 'success!';
+
+    for (var i = 0; i < colorslah.length; i++) {
+      suggestions.add(colorslah[i]['name']);
     }
-    
-    
   }
 
   @override
-  void initState() { 
+  void initState() {
     this.getData();
+
     super.initState();
-    
   }
 
   _add_WarnaState() {
@@ -94,30 +109,24 @@ class _add_WarnaState extends State<add_Warna> {
       suggestions: suggestions,
       textChanged: (text) => currentText = text,
       clearOnSubmit: true,
-      textSubmitted: (text) => setState(() {
-            if (text != "") {
-              added.add(text);
-              print("ini isi item "+text);
-              var url = koneksi.connect('insertcolor.php');
-              http.post(url, body: {"namawarna": text.toString()})
-              .then((response) {
-                print("Response status: ${response.statusCode}");
-                print("Response body: ${response.body}");
-                if(response.body=="sukses")
-                {
-                  Navigator.of(context, rootNavigator: true).pushReplacement(MaterialPageRoute(builder: (context) => new MyPesanPaketKonsumen()));
-                }
-                else
-                {
-                  Toast.show(response.body, context,gravity: Toast.CENTER);
-                }
-              });
-            }
-          }),
+      textSubmitted: (text) => setState(() async {
+        if (text != "") {
+          added.add(text);
+          print("ini isi item " + text);
+          var url = koneksi.connect('insertcolor.php');
+          Response res = await dio.post(url,
+              data: FormData.fromMap({"namawarna": text.toString()}));
+          if (res.data == "sukses") {
+            Navigator.of(context, rootNavigator: true).pushReplacement(
+                MaterialPageRoute(
+                    builder: (context) => new MyPesanPaketKonsumen()));
+          } else {
+            Fluttertoast.showToast(msg: res.data);
+          }
+        }
+      }),
     );
   }
-
-  
 
   SimpleAutoCompleteTextField textField;
   bool showWhichErrorText = false;
@@ -139,16 +148,52 @@ class _add_WarnaState extends State<add_Warna> {
     ]);
 
     body.children.addAll(added.map((item) {
-
-      
       return new ListTile(title: new Text(item));
     }));
 
-    return new Scaffold(
+    return SafeArea(
+      child: new Scaffold(
         resizeToAvoidBottomPadding: false,
         appBar: new AppBar(
-            title: new Text('Choose New Color'),
-            ),
-        body: body);
+          title: new Text('Choose New Color'),
+        ),
+        body: Container(
+          width: MediaQuery.of(context).size.width,
+          height: MediaQuery.of(context).size.height,
+          margin: EdgeInsets.all(15.0),
+          child: Stack(
+            children: <Widget>[
+              Container(
+                width: MediaQuery.of(context).size.width,
+                height: MediaQuery.of(context).size.height,
+                decoration: BoxDecoration(
+                    image: DecorationImage(
+                        image: AssetImage('assets/images/background_image.jpg'),
+                        fit: BoxFit.fitWidth,
+                        alignment: Alignment.topCenter)),
+              ),
+              Container(
+                width: MediaQuery.of(context).size.width,
+                height: MediaQuery.of(context).size.height,
+                margin: EdgeInsets.only(
+                    top: 270, bottom: MediaQuery.of(context).viewInsets.bottom),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  color: Colors.white,
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(23),
+                  child: body,
+                ),
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void whatsAppOpen() async {
+    await FlutterLaunch.launchWathsApp(phone: "+6281357999781", message: "");
   }
 }

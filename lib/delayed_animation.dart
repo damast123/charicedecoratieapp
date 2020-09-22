@@ -38,8 +38,6 @@ class _DelayedAimationState extends State<DelayedAimation>
     }
   }
 
-  
-
   @override
   Widget build(BuildContext context) {
     return FadeTransition(

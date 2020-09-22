@@ -1,30 +1,22 @@
-
 import 'package:flutter/material.dart';
-
-import 'package:charicedecoratieapp/Konsumen/detail_paket.dart';
-
 
 class FeaturedCardTestimoni extends StatelessWidget {
   final String name;
-  final String id;
   final String rating;
   final String no_booking;
-  final String picture;
 
-  FeaturedCardTestimoni({@required this.name,@required this.id,@required this.picture,this.rating,this.no_booking});
+  FeaturedCardTestimoni({@required this.name, this.rating, this.no_booking});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.all(4),
       child: InkWell(
-        
         child: Container(
           decoration: BoxDecoration(
             boxShadow: [
               BoxShadow(
-                color:
-                Color.fromARGB(62, 168, 174, 201),
+                color: Color.fromARGB(62, 168, 174, 201),
                 offset: Offset(0, 9),
                 blurRadius: 14,
               ),
@@ -34,13 +26,10 @@ class FeaturedCardTestimoni extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             child: Stack(
               children: <Widget>[
-                Image.asset(
-                  "assets/images/charicedecor.jpg",
+                SizedBox(
                   height: 220,
                   width: 200,
-                  fit: BoxFit.cover,
                 ),
-
                 Align(
                   alignment: Alignment.bottomCenter,
                   child: Container(
@@ -66,27 +55,26 @@ class FeaturedCardTestimoni extends StatelessWidget {
                           ],
                         ),
                       ),
-
                       child: Padding(
                           padding: const EdgeInsets.only(top: 8.0),
-                          child: Container()
-                      )),
+                          child: Container())),
                 ),
-
                 Align(
                   alignment: Alignment.bottomLeft,
                   child: Padding(
-                      padding: const EdgeInsets.only(left:8.0),
-                      child: RichText(text: TextSpan(children: [
-                        TextSpan(text: '$name \n', style: TextStyle(fontSize: 18)),
-                        TextSpan(text: '$rating \n', style: TextStyle(fontSize: 18)),
-                        TextSpan(text: '$no_booking \n', style: TextStyle(fontSize: 18)),
+                      padding: const EdgeInsets.only(left: 8.0),
+                      child: RichText(
+                          text: TextSpan(children: [
+                        TextSpan(
+                            text: '$name \n', style: TextStyle(fontSize: 18)),
+                        TextSpan(
+                            text: '$rating \n', style: TextStyle(fontSize: 18)),
+                        TextSpan(
+                            text: '$no_booking \n',
+                            style: TextStyle(fontSize: 18)),
                         // TextSpan(text: '\$${price.toString()} \n', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-
-                      ]))
-                  ),
+                      ]))),
                 )
-
               ],
             ),
           ),

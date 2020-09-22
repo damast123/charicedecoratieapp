@@ -1,483 +1,437 @@
+import 'dart:async';
 import 'dart:convert';
 
-import 'package:charicedecoratieapp/Konsumen/ReSchedule.dart';
-import 'package:charicedecoratieapp/Konsumen/input_booking.dart';
-import 'package:charicedecoratieapp/screens/FilterScreen.dart';
+import 'package:charicedecoratieapp/Konsumen/About.dart';
+import 'package:charicedecoratieapp/Konsumen/DetailBookingIsDone.dart';
+import 'package:charicedecoratieapp/Konsumen/Detail_Pesanan_Confirm.dart';
+import 'package:charicedecoratieapp/Konsumen/FAQ.dart';
+import 'package:charicedecoratieapp/Konsumen/HomePaketAll.dart';
+import 'package:charicedecoratieapp/Konsumen/detailPesananKonsumen.dart';
+import 'package:charicedecoratieapp/Konsumen/history_konsumen.dart';
+import 'package:charicedecoratieapp/delayed_animation.dart';
+import 'package:charicedecoratieapp/helpers/dbhelpers.dart';
+import 'package:charicedecoratieapp/koneksi.dart';
+import 'package:charicedecoratieapp/main.dart';
+import 'package:charicedecoratieapp/model/jenis.dart';
+import 'package:charicedecoratieapp/models/barang.dart';
+import 'package:charicedecoratieapp/models/cart.dart';
+import 'package:charicedecoratieapp/settingUser.dart';
+import 'package:charicedecoratieapp/welcomescreen.dart';
 import 'package:charicedecoratieapp/widgets/featured_card.dart';
 import 'package:charicedecoratieapp/widgets/featured_card_mostwanted.dart';
-import 'package:charicedecoratieapp/widgets/featured_card_testimony.dart';
-import 'package:charicedecoratieapp/widgets/hotelAppTheme.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-
-import 'package:charicedecoratieapp/delayed_animation.dart';
-import 'package:toast/toast.dart';
-import 'package:http/http.dart' as http;
-
+import 'package:flutter/services.dart';
+import 'package:flutter_launch/flutter_launch.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:charicedecoratieapp/main.dart';
-import 'package:titled_navigation_bar/titled_navigation_bar.dart';
-import 'package:charicedecoratieapp/koneksi.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:async';
+import 'package:enhanced_future_builder/enhanced_future_builder.dart';
+
 void main() => runApp(Home());
-
+DateTime currentBackPressTime;
 List userProfile = [];
 String v = "";
-String s = "";
-class Home extends StatefulWidget {
-  final String value;
-  final String apa;
-  Home({Key key, this.value,this.apa}) : super(key:key);
-  @override
-  State<StatefulWidget> createState() {
-    return _HomeState();
 
+var checkusername = "";
+List<Customer> getCartLah = [];
+List barangDesk = [];
+var minus = "";
+
+class Home extends StatelessWidget {
+  String value = "";
+  Home({Key key, this.value}) : super(key: key);
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: HomeBotKonsumen(
+        value: value,
+      ),
+    );
   }
 }
 
+class HomeBotKonsumen extends StatefulWidget {
+  String value = "";
+  HomeBotKonsumen({Key key, this.value}) : super(key: key);
+  @override
+  State<StatefulWidget> createState() {
+    return _HomeState();
+  }
+}
 
-class _HomeState extends State<Home> with TickerProviderStateMixin {
+class _HomeState extends State<HomeBotKonsumen> with TickerProviderStateMixin {
   int _currentIndex = 0;
-   bool isBottomBarVisible = true;
-
-  final List<Widget> _children = [
-    MyHomeKonsumen(),
-    PesananKonsumen(),
-    ProfileKonsumen()
-  ];
-
+  int i = 0;
+  bool isBottomBarVisible = true;
+  var pages = [MyHomeKonsumen(), PesananKonsumen(), ProfileKonsumen()];
 
   @override
   Widget build(BuildContext context) {
-    v = "${widget.value}";
-    s = "${widget.apa}";
+    v = widget.value;
     return Scaffold(
-
-      body: _children[_currentIndex], // new
-      bottomNavigationBar: TitledBottomNavigationBar(
-        onTap: onTabTapped, // new
-        currentIndex: _currentIndex, // new
+      body: pages[i],
+      bottomNavigationBar: BottomNavigationBar(
+        onTap: onTabTapped,
+        currentIndex: i,
         items: [
-          TitledNavigationBarItem(title: 'Home', icon: Icons.home),
-          TitledNavigationBarItem(title: 'Orders', icon: Icons.shopping_cart),
-          TitledNavigationBarItem(title: 'Profile', icon: Icons.person_outline),
+          new BottomNavigationBarItem(
+            icon: new Icon(Icons.home),
+            title: new Text('Beranda'),
+          ),
+          new BottomNavigationBarItem(
+            icon: new Icon(Icons.shopping_cart),
+            title: new Text('Pemesanan'),
+          ),
+          new BottomNavigationBarItem(
+            icon: new Icon(Icons.person_outline),
+            title: new Text('Profil'),
+          ),
         ],
-
+        type: BottomNavigationBarType.fixed,
       ),
-
     );
-
   }
 
   void onTabTapped(int index) {
     setState(() {
-      _currentIndex = index;
+      _currentIndex = i;
+      i = index;
     });
   }
 }
-
 
 class MyHomeKonsumen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final appTitle = 'Home';
+    final appTitle = 'Beranda';
 
-    return MaterialApp(
-      title: appTitle,
-      home: Scaffold(
-        resizeToAvoidBottomPadding: false,
-        appBar: AppBar(
-          title: Text(appTitle),
-        ),
-
-        body:HomeKonsumen() ,
-
-      ),
+    return SafeArea(
+      child: Scaffold(
+          resizeToAvoidBottomPadding: false,
+          appBar: AppBar(
+            title: Text(appTitle),
+          ),
+          body: HomeKonsumen()),
     );
   }
-
-
 }
 
 class HomeKonsumen extends StatefulWidget {
-//  Home({Key key, this.value}) : super(key:key);
-
   @override
   _HomeKonsumenState createState() => _HomeKonsumenState();
 }
 
-class _HomeKonsumenState extends State<HomeKonsumen> with TickerProviderStateMixin{
+class _HomeKonsumenState extends State<HomeKonsumen>
+    with TickerProviderStateMixin {
   AnimationController _controller;
-  final String urlHargaMax = koneksi.connect('getHargaMaxMinPaket.php');
-  List rangeharga = []; //DEFINE VARIABLE data DENGAN TYPE List AGAR DAPAT MENAMPUNG COLLECTION / ARRAY
-  
-  String get_harga_murah = "";
-  String get_harga_mahal = "";
+  DatabaseHelper _helper = DatabaseHelper();
 
-  Future<String> getRange() async {
-    // MEMINTA DATA KE SERVER DENGAN KETENTUAN YANG DI ACCEPT ADALAH JSON
-    
-    var res = await http.get(Uri.encodeFull(urlHargaMax), headers: { 'accept':'application/json' });
-    if(mounted)
-    {
-      setState(() {
-      //RESPONSE YANG DIDAPATKAN DARI API TERSEBUT DI DECODE
-      var content = json.decode(res.body);
-      //KEMUDIAN DATANYA DISIMPAN KE DALAM VARIABLE data, 
-      //DIMANA SECARA SPESIFIK YANG INGIN KITA AMBIL ADALAH ISI DARI KEY hasil
-      rangeharga = content['paket'];
-    });
-    get_harga_murah = rangeharga[1]['harga_termurah']; 
-    get_harga_mahal = rangeharga[1]['harga_termahal'];
-    
-    return 'success!';
-    }
-    
-  }
-  
+  String cekuser = "";
+
   final String url = koneksi.connect('getJenisPaket.php');
-  List jenis = []; //DEFINE VARIABLE data DENGAN TYPE List AGAR DAPAT MENAMPUNG COLLECTION / ARRAY
+  List jenis = [];
+  int count = 1;
+  Future getData() async {
+    jenis.clear();
+    try {
+      Response response = await dio.get(url);
 
-  Future<String> getData() async {
-    // MEMINTA DATA KE SERVER DENGAN KETENTUAN YANG DI ACCEPT ADALAH JSON
-    
-    var res = await http.get(Uri.encodeFull(url), headers: { 'accept':'application/json' });
-    if(mounted)
-    {
-      setState(() {
-      
-      //RESPONSE YANG DIDAPATKAN DARI API TERSEBUT DI DECODE
-      var content = json.decode(res.body);
-      //KEMUDIAN DATANYA DISIMPAN KE DALAM VARIABLE data, 
-      //DIMANA SECARA SPESIFIK YANG INGIN KITA AMBIL ADALAH ISI DARI KEY hasil
+      var content = json.decode(response.data);
       jenis = content['jenis'];
-    });
-    
-    
-    return 'success!';
+      return jenis;
+    } catch (e) {
+      print("error object e:" + e);
     }
-    
-    
   }
 
   final String urlgetmostwanted = koneksi.connect('mostwanted.php');
-  List mostwanted = []; //DEFINE VARIABLE data DENGAN TYPE List AGAR DAPAT MENAMPUNG COLLECTION / ARRAY
+  List mostwanted = [];
 
   Future<String> getmostwanted() async {
-    // MEMINTA DATA KE SERVER DENGAN KETENTUAN YANG DI ACCEPT ADALAH JSON
-    
-    var res = await http.get(Uri.encodeFull(urlgetmostwanted), headers: { 'accept':'application/json' });
-    if(mounted)
-    {
+    mostwanted.clear();
+    try {
+      Response response = await dio.get(urlgetmostwanted);
+      print(response.data.toString());
       setState(() {
-      
-      //RESPONSE YANG DIDAPATKAN DARI API TERSEBUT DI DECODE
-      var content = json.decode(res.body);
-      //KEMUDIAN DATANYA DISIMPAN KE DALAM VARIABLE data, 
-      //DIMANA SECARA SPESIFIK YANG INGIN KITA AMBIL ADALAH ISI DARI KEY hasil
-      mostwanted = content['mostwanted'];
-    });
-    
-    
-    return 'success!';
+        var content = json.decode(response.data);
+
+        mostwanted = content['mostwanted'];
+      });
+
+      print('ini isi most wanted: ' + mostwanted.toString());
+    } catch (e) {
+      print("error object e:" + e);
     }
-    
-    
   }
 
-  final String urlgettestimoni = koneksi.connect('testimonihome.php');
-  List testimoni = []; //DEFINE VARIABLE data DENGAN TYPE List AGAR DAPAT MENAMPUNG COLLECTION / ARRAY
-
-  Future<String> gettestimoni() async {
-    // MEMINTA DATA KE SERVER DENGAN KETENTUAN YANG DI ACCEPT ADALAH JSON
-    
-    var res = await http.get(Uri.encodeFull(urlgettestimoni), headers: { 'accept':'application/json' });
-    if(mounted)
-    {
-      setState(() {
-      
-      //RESPONSE YANG DIDAPATKAN DARI API TERSEBUT DI DECODE
-      var content = json.decode(res.body);
-      //KEMUDIAN DATANYA DISIMPAN KE DALAM VARIABLE data, 
-      //DIMANA SECARA SPESIFIK YANG INGIN KITA AMBIL ADALAH ISI DARI KEY hasil
-      testimoni = content['testimoni'];
+  _loadSessionUserBook() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      checkusername = prefs.getString('username') ?? "";
     });
-    
-    return 'success!';
-    }
-    
-    
   }
 
   _loadSessionUser() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-        String cekUsername = prefs.getString('username') ?? "";
-        var url = koneksi.connect('getProfile.php');
-        http.post(url, body: {"username": cekUsername})
-        .then((response) {
-          print("Response status: ${response.statusCode}");
-          print("Response body: ${response.body}");
-          var content = json.decode(response.body);
-          userProfile = content['getProfile'];
-
-        });
+      cekuser = prefs.getString('username') ?? "";
     });
+    var urlgetProfile = koneksi.connect('getProfile.php');
+    print(checkusername);
 
+    Response response = await dio.post(urlgetProfile,
+        data: FormData.fromMap({"username": checkusername}));
+    print("Response status: ${response.statusCode}");
+    print("Response body: ${response.data}");
+    setState(() {
+      var content = json.decode(response.data);
+      userProfile = content['getProfile'];
+    });
   }
 
   @override
-  void initState() {
-    _controller = AnimationController(
-      vsync: this,
-      duration: Duration(
-        milliseconds: 200,
-      ),
-      lowerBound: 0.0,
-      upperBound: 0.1,
-    )..addListener(() {
-      setState(() {});
-    });
+  Future<void> initState() {
     WidgetsBinding.instance.addPostFrameCallback(_afterLayout);
+    // _timer = Timer.periodic(Duration(seconds: 5), (timer) => getData());
+
     super.initState();
-    
+    // for (var i = 0; i < getCartLah.length; i++) {
+    //   var tanggal_akhir = DateTime.parse(getCartLah[i].tanggal_acara);
+    //   var difference = _selectedDay.difference(tanggal_akhir).inDays;
+    //   print("Ini isi difference: " + difference.toString());
+    //   print("Ini isi getCartLah: " + getCartLah[i].tanggal_acara);
+    // }
   }
+
   @override
   void dispose() {
-    super.dispose();
     _controller.dispose();
+    super.dispose();
   }
 
-  
-  _afterLayout(_) {
+  _afterLayout(_) async {
+    _loadSessionUserBook();
     this.getData();
-    this.getRange();
     this.getmostwanted();
-    this.gettestimoni();
     this._loadSessionUser();
+    int result = await _helper.deleteBarang();
+
+    if (result > 0) {
+      await _helper.deleteCart();
+    }
   }
-  
-  
-  
+
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints viewportConstraints) {
-        return SingleChildScrollView(
-          child:DelayedAimation(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                getFilterBarUI(),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: <Widget>[
-                    Text('Most wanted package',style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      ),),
-                    GestureDetector(
-                      onTap: (){
-                        Toast.show('View more Detail', context);
-                      },
-                      child: Text('View more detail',style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.blue
-                      ),),
-                    )
-                  ],
-                ),
-                
-                Container(
-                  height: 230,
-                  child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: jenis == null ? 0:jenis.length,
-                      itemBuilder: (_, index) {
-                        return FeaturedCardMostWanted(
-                          name: mostwanted[index]['nama_paket'],
-                          id: mostwanted[index]['idpaket'],
-                          picture: '',
-                        );
-                  })),
-                
-                
-                
-                Padding(
-                  padding: const EdgeInsets.only(left: 15.0),
-                  child: Text('Jenis paket',style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  ),),
-                ),
-                Container(
-                  height: 230,
-                  child: jenis.isEmpty ? Container(padding: EdgeInsets.only(left: 30.0), child: Text("Tidak ada jenis",style: TextStyle(fontSize: 20,),),) :ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: jenis.length,
-                      itemBuilder: (_, index) {
-                        return FeaturedCard(
-                          name: jenis[index]['nama_jenis'],
-                          id: jenis[index]['idjenis'],
-                          picture: '',
-                        );
-                        
-                  })
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(left: 15.0),
-                  child: Text('Testimoni paket',style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  ),),
-                ),
-                Container(
-                  height: 230,
-                  child: testimoni.isEmpty ? Container(padding: EdgeInsets.only(left: 30.0), child: Text("Tidak ada testimony",style: TextStyle(fontSize: 20,),),) : ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: testimoni.length,
-                      itemBuilder: (_, index) {
-                        return FeaturedCardTestimoni(
-                          name: testimoni[index]['nama_jenis'],
-                          id: testimoni[index]['idjenis'],
-                          picture: '',
-                          rating: testimoni[index]['rating'],
-                          no_booking: testimoni[index]['no_booking'],
-                        );
-                        
-                  })
-                ),
-              ],
-            ),
-          delay: 100,
-        ),
-      );
-    });
-  }
-
-
-    Widget getFilterBarUI() {
-    return Stack(
-      children: <Widget>[
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          child: Container(
-            height: 24,
-            decoration: BoxDecoration(
-              color: HotelAppTheme.buildLightTheme().backgroundColor,
-              boxShadow: <BoxShadow>[
-                BoxShadow(color: Colors.grey.withOpacity(0.2), offset: Offset(0, -2), blurRadius: 8.0),
-              ],
-            ),
-          ),
-        ),
-        Container(
-          color: HotelAppTheme.buildLightTheme().backgroundColor,
-          child: Padding(
-            padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 4),
-            child: Row(
-              children: <Widget>[
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
+    return WillPopScope(
+        child: Container(
+          child: SingleChildScrollView(
+            child: DelayedAimation(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.only(right: 10.0),
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.of(context, rootNavigator: true)
+                                .pushReplacement(MaterialPageRoute(
+                                    builder: (context) => MYHome_paket(
+                                          getVal: "false",
+                                          user: cekuser,
+                                        )));
+                          },
+                          child: Text(
+                            'Lihat semua paket',
+                            style: TextStyle(fontSize: 20, color: Colors.blue),
+                          ),
+                        ),
+                      )
+                    ],
+                  ),
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height / 40,
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: <Widget>[
+                      Padding(
+                        padding: EdgeInsets.only(left: 15.0),
+                        child: Text(
+                          'Paket yang sering dipesan',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      )
+                    ],
+                  ),
+                  // StreamBuilder(
+                  //   stream: mostwanted,
+                  // ),
+                  Container(
+                      height: 230,
+                      child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: mostwanted == null ? 0 : mostwanted.length,
+                          itemBuilder: (_, index) {
+                            return FeaturedCardMostWanted(
+                                name: mostwanted[index]['nama_paket'],
+                                jenisPaket: mostwanted[index]['nama_jenis'],
+                                id: mostwanted[index]['idpaket'],
+                                picture: mostwanted[index]['nama_gambar'],
+                                user: cekuser);
+                          })),
+                  Padding(
+                    padding:
+                        const EdgeInsets.only(left: 15.0, top: 15, bottom: 10),
                     child: Text(
-                      "Filter it...",
+                      'Jenis paket',
                       style: TextStyle(
-                        fontWeight: FontWeight.w100,
-                        fontSize: 16,
-                        color: Colors.black
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-                ),
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    focusColor: Colors.transparent,
-                    highlightColor: Colors.transparent,
-                    hoverColor: Colors.transparent,
-                    splashColor: Colors.grey.withOpacity(0.2),
-                    borderRadius: BorderRadius.all(
-                      Radius.circular(4.0),
-                    ),
-                    onTap: () {
-                      FocusScope.of(context).requestFocus(FocusNode());
-                      
-                      Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(builder: (context) => FiltersScreen(num1: get_harga_murah,num2: get_harga_mahal,), fullscreenDialog: true));
+                  FutureBuilder(
+                    future: getData(),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData) {
+                        print(snapshot.data);
+                        return Container(
+                            height: 230,
+                            child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: snapshot.data.length,
+                                itemBuilder: (context, index) {
+                                  return FeaturedCard(
+                                    name: snapshot.data[index]['nama_jenis'],
+                                    id: snapshot.data[index]['idjenis'],
+                                    picture: snapshot.data[index]
+                                        ['gambar_jenis'],
+                                    usern: cekuser,
+                                  );
+                                }));
+                      } else {
+                        return Center(child: CircularProgressIndicator());
+                      }
                     },
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 8),
-                      child: Row(
-                        children: <Widget>[
-                          Text(
-                            "Filtter",
-                            style: TextStyle(
-                              fontWeight: FontWeight.w100,
-                              fontSize: 16,
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Icon(Icons.sort, color: Colors.black),
-                          ),
-                        ],
-                      ),
-                    ),
                   ),
-                ),
-              ],
+                  // Container(
+                  //     height: 230,
+                  //     child: jenis.isEmpty
+                  //         ? Container(
+                  //             padding: EdgeInsets.only(left: 30.0),
+                  //             child: Text(
+                  //               "Tidak ada jenis",
+                  //               style: TextStyle(
+                  //                 fontSize: 20,
+                  //               ),
+                  //             ),
+                  //           )
+                  //         : ListView.builder(
+                  //             scrollDirection: Axis.horizontal,
+                  //             itemCount: jenis.length,
+                  //             itemBuilder: (_, index) {
+                  //               return FeaturedCard(
+                  //                 name: jenis[index]['nama_jenis'],
+                  //                 id: jenis[index]['idjenis'],
+                  //                 picture: jenis[index]['gambar_jenis'],
+                  //                 usern: cekuser,
+                  //               );
+                  //             })),
+                ],
+              ),
+              delay: 100,
             ),
           ),
         ),
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          child: Divider(
-            height: 1,
-          ),
-        )
-      ],
-    );
+        onWillPop: () {
+          {
+            DateTime now = DateTime.now();
+            if (currentBackPressTime == null ||
+                now.difference(currentBackPressTime) > Duration(seconds: 2)) {
+              currentBackPressTime = now;
+              Fluttertoast.showToast(msg: "Are you sure want to back");
+              return Future.value(false);
+            }
+            SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+            return Future.value(true);
+          }
+        });
   }
-
-
 }
 
-
-// Pesanan konsumen
 class PesananKonsumen extends StatefulWidget {
-  // const PesananKonsumen({Key key, this.choice}) : super(key: key);
-  // final Choice choice;
   @override
   _PesananKonsumenState createState() => _PesananKonsumenState();
 }
 
-class _PesananKonsumenState extends State<PesananKonsumen> with TickerProviderStateMixin {
+class _PesananKonsumenState extends State<PesananKonsumen>
+    with TickerProviderStateMixin {
+  DatabaseHelper _helper = DatabaseHelper();
   AnimationController _controller;
-  final String url = koneksi.connect('selectbooking.php');
+  bool showConfirm = false;
+  final String urlGetWaitingList =
+      koneksi.connect('getBookingIsDone0.php?username=' + checkusername);
+  final String url = koneksi
+      .connect('getBookingIsDoneKonsumen2.php?username=' + checkusername);
+  final String urlHistory = koneksi.connect(
+      'historyBookingMonthAndYearKonsumen.php?username=' + checkusername);
   bool buttonOn = true;
-  List book = []; //DEFINE VARIABLE data DENGAN TYPE List AGAR DAPAT MENAMPUNG COLLECTION / ARRAY
-  
+
+  List<Barang> getCartBarang = [];
+  List history = [];
+  List waitingList = [];
+  List book = [];
+
   Future<String> getDataBook() async {
-    // MEMINTA DATA KE SERVER DENGAN KETENTUAN YANG DI ACCEPT ADALAH JSON
-    var res = await http.get(Uri.encodeFull(url), headers: { 'accept':'application/json' });
-    if(mounted)
-    {
+    book.clear();
+    try {
+      Response response = await dio.get(url);
+      print(response.data.toString());
       setState(() {
-      
-      //RESPONSE YANG DIDAPATKAN DARI API TERSEBUT DI DECODE
-      var content = json.decode(res.body);
-      //KEMUDIAN DATANYA DISIMPAN KE DALAM VARIABLE data, 
-      //DIMANA SECARA SPESIFIK YANG INGIN KITA AMBIL ADALAH ISI DARI KEY hasil
-      book = content['selectbooking'];
-    });
-    return 'success!';
+        var content = json.decode(response.data);
+
+        book = content['getBooking2'];
+      });
+    } catch (e) {
+      print("error object e:" + e);
     }
-    
+  }
+
+  Future<String> getDataWaitingList() async {
+    waitingList.clear();
+    try {
+      Response response = await dio.get(urlGetWaitingList);
+      print(response.data.toString());
+      setState(() {
+        var content = json.decode(response.data);
+
+        waitingList = content['getBooking0'];
+      });
+    } catch (e) {
+      print("error object e:" + e);
+    }
+  }
+
+  Future<String> getDataHistoryBook() async {
+    history.clear();
+    try {
+      Response response = await dio.get(urlHistory);
+      print(response.data.toString());
+      setState(() {
+        var content = json.decode(response.data);
+        history = content['historyBooking'];
+      });
+    } catch (e) {
+      print("error object e:" + e);
+    }
   }
 
   @override
@@ -490,11 +444,14 @@ class _PesananKonsumenState extends State<PesananKonsumen> with TickerProviderSt
       lowerBound: 0.0,
       upperBound: 0.1,
     )..addListener(() {
-      setState(() {});
-    });
-      super.initState();
-      this.getDataBook(); //PANGGIL FUNGSI YANG TELAH DIBUAT SEBELUMNYA
+        setState(() {});
+      });
+    super.initState();
+    this.getDataHistoryBook();
+    this.getDataWaitingList();
+    this.getDataBook();
   }
+
   @override
   void dispose() {
     super.dispose();
@@ -503,177 +460,564 @@ class _PesananKonsumenState extends State<PesananKonsumen> with TickerProviderSt
 
   @override
   Widget build(BuildContext context) {
-    
     return MaterialApp(
-      title: 'Welcome to Charicedecoratie',
       home: DefaultTabController(
-        length: 2,
-        child: Scaffold(
-        appBar: AppBar(
-            bottom: TabBar(
-              tabs: [
-                Tab(icon: Icon(Icons.shopping_cart)),
-                Tab(icon: Icon(Icons.history)),
-              ],
-            ),
-          title: Text('Order'),
-        ),
-        body: DelayedAimation(child: 
-          TabBarView(
-          children: <Widget>[
-            new Column(
-              children: <Widget>[
-                Text('Isi cart'),
-                SizedBox(height: 20.0,),
-                Container(
-                  height: 270.0,
-                  child: ListView.separated(
-                    separatorBuilder: (context,index){
-                      return Divider(color: Colors.grey,);
-                    },
-                    itemCount: 5, //KETIKA DATANYA KOSONG KITA ISI DENGAN 0 DAN APABILA ADA MAKA KITA COUNT JUMLAH DATA YANG ADA
-                    itemBuilder: (BuildContext context, int index) { 
-                      return Container(
-                        child: Card(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min, children: <Widget>[
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                children: <Widget>[
-                                  Text('Package Type:'),
-                                  Text('ini'),
-                                  RaisedButton(elevation: 0.0,
-                                  color: Colors.blueAccent,
-                                  child: Text('Add',),
-                                  onPressed: (){
-                                      Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(builder: (context) => MyReschedule(), fullscreenDialog: true));
-                                      Toast.show('ini bisa ditekan dengan index: '+index.toString(), context);
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }
-                  ),
-                ),
-                SizedBox(height: 20.0,),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: <Widget>[
-                    Text('Status:'),
-                    Text('Sukses'),
+        length: 3,
+        child: WillPopScope(
+          child: SafeArea(
+            child: Scaffold(
+              appBar: AppBar(
+                bottom: TabBar(
+                  tabs: [
+                    Tab(icon: Icon(Icons.payment)),
+                    Tab(icon: Icon(Icons.list)),
+                    Tab(icon: Icon(Icons.history)),
                   ],
                 ),
-                SizedBox(height: 50.0,),
-                RaisedButton(elevation: 0.0,
-                  color: Colors.blue,
-                  child: Text('Confirm',style: TextStyle(color: Colors.white),),
-                  onPressed: (){
-                    Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(builder: (context) => new MyInputBooking()));
-                  },
-                ),
-                
-              ], 
-            ),
-            new Column(
-              children: <Widget>[
-                Text('History'),
-                SizedBox(height: 20.0,),
-                Container(
-                  height: 270.0,
-                  child: book.isEmpty ? Container(padding: EdgeInsets.all(100.0),child: Text('Empty',style: TextStyle(fontSize: 20),)) : ListView.separated(
-                    separatorBuilder: (context,index){
-                      return Divider(color: Colors.grey,);
-                    },
-                    itemCount: book.length, //KETIKA DATANYA KOSONG KITA ISI DENGAN 0 DAN APABILA ADA MAKA KITA COUNT JUMLAH DATA YANG ADA
-                    itemBuilder: (BuildContext context, int index) { 
-                      return Container(
-                        child: Card(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min, children: <Widget>[
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                children: <Widget>[
-                                  Text('Package Type:'),
-                                  Text('ini'),
-                                  RaisedButton(elevation: 0.0,
-                                  color: Colors.blueAccent,
-                                  child: Text('Add',),
-                                  onPressed: (){
-                                      Toast.show('ini bisa ditekan dengan index: '+index.toString(), context);
-                                    },
+                title: Text('Pemesanan'),
+              ),
+              body: DelayedAimation(
+                child: TabBarView(
+                  children: <Widget>[
+                    new SingleChildScrollView(
+                      child: Column(
+                        children: <Widget>[
+                          SizedBox(
+                            height: MediaQuery.of(context).size.height / 30,
+                          ),
+                          Text(
+                            'Booking dan menunggu pembayaran',
+                            style: TextStyle(fontSize: 20),
+                          ),
+                          SizedBox(
+                            height: 20.0,
+                          ),
+                          Container(
+                            child: waitingList.isEmpty
+                                ? Container(
+                                    child: Text(
+                                      "Tidak ada booking yang akan dibayar",
+                                      style: TextStyle(fontSize: 18.0),
+                                    ),
+                                  )
+                                : Container(
+                                    height:
+                                        MediaQuery.of(context).size.height / 3,
+                                    child: ListView.separated(
+                                        separatorBuilder: (context, index) {
+                                          return Divider(
+                                            color: Colors.grey,
+                                          );
+                                        },
+                                        itemCount: waitingList.length,
+                                        itemBuilder:
+                                            (BuildContext context, int index) {
+                                          return Container(
+                                            child: GestureDetector(
+                                              onTap: () {},
+                                              child: Card(
+                                                child: Column(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: <Widget>[
+                                                    ListTile(
+                                                      title: Text(
+                                                        waitingList[index]
+                                                            ['no_booking'],
+                                                        style: TextStyle(
+                                                            fontSize: 25.0,
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .bold),
+                                                      ),
+                                                      subtitle: Column(
+                                                        children: <Widget>[
+                                                          Row(
+                                                            children: <Widget>[
+                                                              Text(
+                                                                'Nama acara : ',
+                                                                style: TextStyle(
+                                                                    fontSize:
+                                                                        16,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold),
+                                                              ),
+                                                              Text(
+                                                                  waitingList[
+                                                                          index]
+                                                                      [
+                                                                      'nama_acara'],
+                                                                  style: TextStyle(
+                                                                      fontSize:
+                                                                          16))
+                                                            ],
+                                                          ),
+                                                          Row(
+                                                            children: <Widget>[
+                                                              Text(
+                                                                'Tanggal acara : ',
+                                                                style: TextStyle(
+                                                                    fontSize:
+                                                                        16,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold),
+                                                              ),
+                                                              Text(
+                                                                  waitingList[
+                                                                          index]
+                                                                      [
+                                                                      'tanggal_acara'],
+                                                                  style: TextStyle(
+                                                                      fontSize:
+                                                                          16))
+                                                            ],
+                                                          ),
+                                                          Row(
+                                                            children: <Widget>[
+                                                              Text(
+                                                                'Grandtotal : ',
+                                                                style: TextStyle(
+                                                                    fontSize:
+                                                                        16,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold),
+                                                              ),
+                                                              Text(
+                                                                  waitingList[
+                                                                          index]
+                                                                      [
+                                                                      'grandtotal'],
+                                                                  style: TextStyle(
+                                                                      fontSize:
+                                                                          16))
+                                                            ],
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      trailing: Icon(
+                                                          Icons
+                                                              .keyboard_arrow_right,
+                                                          color: Colors.black,
+                                                          size: 30.0),
+                                                      onTap: () {
+                                                        Navigator.of(context,
+                                                                rootNavigator:
+                                                                    true)
+                                                            .push(
+                                                          MaterialPageRoute(
+                                                            builder: (context) =>
+                                                                new MyDetailPesananConfirm(
+                                                              booking: waitingList[
+                                                                      index][
+                                                                  'no_booking'],
+                                                              user: userProfile[
+                                                                      0]
+                                                                  ['username'],
+                                                            ),
+                                                          ),
+                                                        )
+                                                            .then(
+                                                          (_) {
+                                                            this.getDataHistoryBook();
+                                                            this.getDataWaitingList();
+                                                            this.getDataBook();
+                                                          },
+                                                        );
+                                                      },
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        }),
                                   ),
-                                ],
-                              ),
-                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    new Column(
+                      children: <Widget>[
+                        Container(
+                          child: SingleChildScrollView(
+                            child: Column(
+                              children: <Widget>[
+                                SizedBox(
+                                  height: 40,
+                                ),
+                                Text(
+                                  'Daftar pesanan',
+                                  style: TextStyle(fontSize: 20),
+                                ),
+                                SizedBox(
+                                  height: 30.0,
+                                ),
+                                if (book.isEmpty)
+                                  Container(
+                                      child: Text(
+                                    'Tidak ada data pesanan',
+                                    style: TextStyle(fontSize: 20),
+                                  )),
+                                Container(
+                                  height:
+                                      MediaQuery.of(context).size.height / 3,
+                                  child: book.isEmpty
+                                      ? Container(
+                                          padding: EdgeInsets.all(100.0),
+                                          child: Text(
+                                            'Kosong',
+                                            style: TextStyle(fontSize: 20),
+                                          ))
+                                      : ListView.separated(
+                                          separatorBuilder: (context, index) {
+                                            return Divider(
+                                              color: Colors.grey,
+                                            );
+                                          },
+                                          itemCount: book.length,
+                                          itemBuilder: (BuildContext context,
+                                              int index) {
+                                            return Container(
+                                              child: GestureDetector(
+                                                onTap: () {},
+                                                child: Card(
+                                                  child: Column(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: <Widget>[
+                                                      ListTile(
+                                                        title: Text(
+                                                          book[index]
+                                                              ['no_booking'],
+                                                          style: TextStyle(
+                                                              fontSize: 25.0,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold),
+                                                        ),
+                                                        subtitle: Column(
+                                                          children: <Widget>[
+                                                            Row(
+                                                              children: <
+                                                                  Widget>[
+                                                                Text(
+                                                                  'Nama acara : ',
+                                                                  style: TextStyle(
+                                                                      fontSize:
+                                                                          16,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold),
+                                                                ),
+                                                                Text(
+                                                                    book[index][
+                                                                        'nama_acara'],
+                                                                    style: TextStyle(
+                                                                        fontSize:
+                                                                            16))
+                                                              ],
+                                                            ),
+                                                            Row(
+                                                              children: <
+                                                                  Widget>[
+                                                                Text(
+                                                                  'Tanggal acara : ',
+                                                                  style: TextStyle(
+                                                                      fontSize:
+                                                                          16,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold),
+                                                                ),
+                                                                Text(
+                                                                    book[index][
+                                                                        'tanggal_acara'],
+                                                                    style: TextStyle(
+                                                                        fontSize:
+                                                                            16))
+                                                              ],
+                                                            ),
+                                                            Row(
+                                                              children: <
+                                                                  Widget>[
+                                                                Text(
+                                                                  'Grandtotal : ',
+                                                                  style: TextStyle(
+                                                                      fontSize:
+                                                                          16,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold),
+                                                                ),
+                                                                Text(
+                                                                    book[index][
+                                                                        'grandtotal'],
+                                                                    style: TextStyle(
+                                                                        fontSize:
+                                                                            16))
+                                                              ],
+                                                            ),
+                                                          ],
+                                                        ),
+                                                        trailing: Icon(
+                                                            Icons
+                                                                .keyboard_arrow_right,
+                                                            color: Colors.black,
+                                                            size: 30.0),
+                                                        onTap: () {
+                                                          Navigator.of(context,
+                                                                  rootNavigator:
+                                                                      true)
+                                                              .push(
+                                                                  MaterialPageRoute(
+                                                                      builder: (context) =>
+                                                                          new MyDetailPesanPaketKonsumen(
+                                                                            noBooking:
+                                                                                book[index]['no_booking'],
+                                                                          )));
+                                                        },
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          }),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      );
-                    }
-                  ),
+                      ],
+                    ),
+                    new Column(
+                      children: <Widget>[
+                        SizedBox(
+                          height: 20.0,
+                        ),
+                        Align(
+                          alignment: Alignment.center,
+                          child: Text(
+                            'Riwayat booking',
+                            style: TextStyle(fontSize: 20),
+                          ),
+                        ),
+                        SizedBox(
+                          height: 20.0,
+                        ),
+                        Container(
+                          height: 270.0,
+                          child: history.isEmpty
+                              ? Container(
+                                  padding: EdgeInsets.all(100.0),
+                                  child: Text(
+                                    'Tidak ada riwayat\nbooking di bulan ini',
+                                    style: TextStyle(fontSize: 20),
+                                  ))
+                              : ListView.separated(
+                                  separatorBuilder: (context, index) {
+                                    return Divider(
+                                      color: Colors.grey,
+                                    );
+                                  },
+                                  itemCount: history.length,
+                                  itemBuilder:
+                                      (BuildContext context, int index) {
+                                    return Container(
+                                      child: GestureDetector(
+                                        onTap: () {},
+                                        child: Card(
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: <Widget>[
+                                              ListTile(
+                                                title: Text(
+                                                  history[index]['no_booking'],
+                                                  style: TextStyle(
+                                                      fontSize: 25.0,
+                                                      fontWeight:
+                                                          FontWeight.bold),
+                                                ),
+                                                subtitle: Column(
+                                                  children: <Widget>[
+                                                    Row(
+                                                      children: <Widget>[
+                                                        Text(
+                                                          'Nama acara : ',
+                                                          style: TextStyle(
+                                                              fontSize: 16,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold),
+                                                        ),
+                                                        Text(
+                                                            history[index][
+                                                                'nama_pemesan'],
+                                                            style: TextStyle(
+                                                                fontSize: 16)),
+                                                      ],
+                                                    ),
+                                                    Row(
+                                                      children: <Widget>[
+                                                        Text(
+                                                          'Tanggal acara : ',
+                                                          style: TextStyle(
+                                                              fontSize: 16,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold),
+                                                        ),
+                                                        Text(
+                                                            history[index][
+                                                                'tanggal_acara'],
+                                                            style: TextStyle(
+                                                                fontSize: 16)),
+                                                      ],
+                                                    ),
+                                                    Row(
+                                                      children: <Widget>[
+                                                        Text(
+                                                          'Grandtotal : ',
+                                                          style: TextStyle(
+                                                              fontSize: 16,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold),
+                                                        ),
+                                                        Text(
+                                                          history[index]
+                                                              ['grandtotal'],
+                                                          style: TextStyle(
+                                                              fontSize: 16),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    Row(
+                                                      children: <Widget>[
+                                                        Text(
+                                                          'status : ',
+                                                          style: TextStyle(
+                                                              fontSize: 18,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold),
+                                                        ),
+                                                        if (history[index]
+                                                                ['_isdone'] ==
+                                                            "-1")
+                                                          Text(
+                                                            'Batal',
+                                                          ),
+                                                        if (history[index]
+                                                                ['_isdone'] ==
+                                                            "3")
+                                                          Text(
+                                                            'Selesai',
+                                                            style: TextStyle(
+                                                                fontSize: 16),
+                                                          ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                                trailing: Icon(
+                                                    Icons.keyboard_arrow_right,
+                                                    color: Colors.black,
+                                                    size: 30.0),
+                                                onTap: () {
+                                                  Navigator.of(context,
+                                                          rootNavigator: true)
+                                                      .push(MaterialPageRoute(
+                                                          builder: (context) =>
+                                                              new MyDetailBookDone(
+                                                                getBooking: history[
+                                                                        index][
+                                                                    'no_booking'],
+                                                                getIsDone: history[
+                                                                        index]
+                                                                    ['_isdone'],
+                                                              )));
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }),
+                        ),
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height / 120,
+                        ),
+                        RaisedButton(
+                          elevation: 0.0,
+                          color: Colors.blue,
+                          child: Text(
+                            'Tampilkan semua riwayat',
+                            style: TextStyle(color: Colors.white, fontSize: 20),
+                          ),
+                          onPressed: () {
+                            Navigator.of(context, rootNavigator: true)
+                                .push(MaterialPageRoute(
+                                    builder: (context) => new HistoryKonsumen(
+                                          username: userProfile[0]['username'],
+                                        )));
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                SizedBox(height: 50.0,),
-                book.isEmpty ? Visibility(
-                  child:RaisedButton(elevation: 0.0,
-                    color: Colors.blue,
-                    child: Text('Confirm',style: TextStyle(color: Colors.white),),
-                    onPressed: (){
-                      Toast.show('ini bisa ditekan dengan index: ', context);
-                    },
-                  ),
-                  visible: false,
-                ):Visibility(
-                  child:RaisedButton(elevation: 0.0,
-                    color: Colors.blue,
-                    child: Text('Confirm',style: TextStyle(color: Colors.white),),
-                    onPressed: (){
-                      
-                    },
-                  ),
-                  visible: buttonOn,
-                ),
-                
-              ], 
+                delay: 100,
+              ),
             ),
-          ],
+          ),
+          onWillPop: () {
+            {
+              DateTime now = DateTime.now();
+              if (currentBackPressTime == null ||
+                  now.difference(currentBackPressTime) > Duration(seconds: 2)) {
+                currentBackPressTime = now;
+                Fluttertoast.showToast(msg: "Are you sure want to back");
+                return Future.value(false);
+              }
+              SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+              return Future.value(true);
+            }
+          },
         ),
-          delay: 100,
-        ),
-        
-      ),
-        
-        
       ),
     );
   }
-}
 
+  void whatsAppOpen() async {
+    await FlutterLaunch.launchWathsApp(phone: "+6281357999781", message: "");
+  }
+}
 
 class ProfileKonsumen extends StatefulWidget {
   @override
   _ProfileKonsumenState createState() => _ProfileKonsumenState();
 }
 
-class _ProfileKonsumenState extends State<ProfileKonsumen> with TickerProviderStateMixin{
+class _ProfileKonsumenState extends State<ProfileKonsumen>
+    with TickerProviderStateMixin {
   AnimationController _controller;
-  
+
   _deleteSessionUser() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-        prefs.remove('username');
-        prefs.remove('password');
-        prefs.remove('status');
+      prefs.remove('username');
+      prefs.remove('password');
+      prefs.remove('status');
     });
   }
-  
-  
 
   @override
   void initState() {
-    
     _controller = AnimationController(
       vsync: this,
       duration: Duration(
@@ -682,109 +1026,238 @@ class _ProfileKonsumenState extends State<ProfileKonsumen> with TickerProviderSt
       lowerBound: 0.0,
       upperBound: 0.1,
     )..addListener(() {
-      setState(() {});
-    });
-      super.initState();
+        setState(() {});
+      });
+    super.initState();
+    print("ini isi userprofile: " + userProfile[0]['nama_user']);
   }
+
   @override
   void dispose() {
     super.dispose();
     _controller.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Welcome to Charicedecoratie',
-      home: Scaffold(
-        appBar: AppBar(
-          title: Text('Profile'),
-        ),
-        body: DelayedAimation
-        (
-          child:Padding(
-          padding: EdgeInsets.all(30.0),
-          child: Column(
-            children: <Widget>[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: <Widget>[
-                  Text('Nama User'),
-                  Text(userProfile[0]['nama_user'].toString()),
-                ],),
-                
-                SizedBox(height: 20.0,),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: <Widget>[
-                  Text('No telepon'),
-                  Text(userProfile[0]['no_telp'].toString()),
-                ],),
-                
-                SizedBox(height: 30.0,),
-                FlatButton.icon(
-                  color: Colors.blue,
-                  icon: Icon(Icons.settings,color: Colors.white,), //`Icon` to display
-                  label: Text('Setting',style: TextStyle(color: Colors.white),), //`Text` to display
-                  onPressed: () {
-                    Toast.show('bisa kok', context,duration: Toast.LENGTH_SHORT,gravity: Toast.BOTTOM);
-                  },
+    return WillPopScope(
+        child: SafeArea(
+          child: Scaffold(
+            appBar: AppBar(
+              title: Text('Profil'),
+            ),
+            body: DelayedAimation(
+              child: Container(
+                alignment: Alignment.center,
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: <Widget>[
+                      Container(
+                        margin: EdgeInsets.only(
+                            left: 10, right: 10, top: 10, bottom: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.5),
+                              spreadRadius: 13,
+                              blurRadius: 15,
+                              offset:
+                                  Offset(-20, 3), // changes position of shadow
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: <Widget>[
+                            SizedBox(
+                              height: 30,
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: <Widget>[
+                                IconButton(
+                                    iconSize:
+                                        (MediaQuery.of(context).size.width *
+                                                MediaQuery.of(context)
+                                                    .size
+                                                    .height) /
+                                            4608,
+                                    icon: Icon(Icons.android),
+                                    color: Colors.green,
+                                    onPressed: () {
+                                      Navigator.of(context, rootNavigator: true)
+                                          .push(MaterialPageRoute(
+                                              builder: (context) =>
+                                                  new MyAbout()));
+                                    }),
+                                SizedBox(
+                                  width:
+                                      MediaQuery.of(context).size.width / 500,
+                                ),
+                                IconButton(
+                                    iconSize:
+                                        (MediaQuery.of(context).size.width *
+                                                MediaQuery.of(context)
+                                                    .size
+                                                    .height) /
+                                            4608,
+                                    icon: Icon(Icons.info_outline),
+                                    color: Colors.lightBlue,
+                                    onPressed: () {
+                                      Navigator.of(context, rootNavigator: true)
+                                          .push(MaterialPageRoute(
+                                              builder: (context) =>
+                                                  new MyFAQ()));
+                                    }),
+                              ],
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: <Widget>[
+                                Padding(
+                                  padding: EdgeInsets.only(right: 6.5),
+                                  child: Text(
+                                    "About",
+                                    style: TextStyle(fontSize: 18),
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: MediaQuery.of(context).size.width / 80,
+                                ),
+                                Padding(
+                                  padding: EdgeInsets.only(right: 9.5),
+                                  child: Text(
+                                    "FAQ",
+                                    style: TextStyle(fontSize: 18),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(
+                              height: 30,
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(
+                        height: 50.0,
+                      ),
+                      Container(
+                        margin: EdgeInsets.only(
+                            left: 10, right: 10, top: 10, bottom: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.5),
+                              spreadRadius: 13,
+                              blurRadius: 15,
+                              offset:
+                                  Offset(-20, 3), // changes position of shadow
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: <Widget>[
+                            SizedBox(
+                              height: 30,
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: <Widget>[
+                                IconButton(
+                                    iconSize:
+                                        (MediaQuery.of(context).size.width *
+                                                MediaQuery.of(context)
+                                                    .size
+                                                    .height) /
+                                            4608,
+                                    icon: Icon(Icons.account_box),
+                                    color: Colors.black87,
+                                    onPressed: () {
+                                      Navigator.of(context, rootNavigator: true)
+                                          .push(MaterialPageRoute(
+                                              builder: (context) =>
+                                                  new MySettingUser(
+                                                    username: userProfile[0]
+                                                        ['username'],
+                                                    nama: userProfile[0]
+                                                        ['nama_user'],
+                                                    noTelp: userProfile[0]
+                                                        ['no_telp'],
+                                                    email: userProfile[0]
+                                                        ['email'],
+                                                  )));
+                                    }),
+                                SizedBox(
+                                  width: MediaQuery.of(context).size.width / 50,
+                                ),
+                                IconButton(
+                                  iconSize: (MediaQuery.of(context).size.width *
+                                          MediaQuery.of(context).size.height) /
+                                      4608,
+                                  icon: Icon(Icons.exit_to_app),
+                                  color: Colors.red,
+                                  onPressed: () {
+                                    _deleteSessionUser();
+                                    Navigator.of(context, rootNavigator: true)
+                                        .pushAndRemoveUntil(
+                                            MaterialPageRoute(
+                                              builder: (context) => Login(),
+                                            ),
+                                            (Route<dynamic> route) => false);
+                                  },
+                                ),
+                              ],
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: <Widget>[
+                                Padding(
+                                  padding: EdgeInsets.only(right: 8.5),
+                                  child: Text(
+                                    "My account",
+                                    style: TextStyle(fontSize: 18),
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: MediaQuery.of(context).size.width / 50,
+                                ),
+                                Padding(
+                                  padding: EdgeInsets.only(right: 11),
+                                  child: Text(
+                                    "Log out",
+                                    style: TextStyle(fontSize: 18),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(
+                              height: 30,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                SizedBox(height: 40.0,),
-                Row(
-                  children: <Widget>[
-                    Text('About')
-                  ],
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: <Widget>[
-                    FlatButton.icon(
-                      color: Colors.blue,
-                      icon: Icon(Icons.info_outline,color: Colors.white,), //`Icon` to display
-                      label: Text('Info',style: TextStyle(color: Colors.white),), //`Text` to display
-                      onPressed: () {
-                        
-                      },
-                    ),
-                    FlatButton.icon(
-                      color: Colors.blue,
-                      icon: Icon(Icons.android,color: Colors.white,), //`Icon` to display
-                      label: Text('About',style: TextStyle(color: Colors.white),), //`Text` to display
-                      onPressed: () {
-                        
-                      },
-                    ),
-                  ],
-                ),
-                
-                SizedBox(height: 50.0,),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    
-                    
-                    FlatButton.icon(
-                      color: Colors.blue,
-                      icon: Icon(Icons.exit_to_app,color: Colors.white,), //`Icon` to display
-                      label: Text('Log out',style: TextStyle(color: Colors.white),), //`Text` to display
-                      onPressed: () {
-                        _deleteSessionUser();
-                        Navigator.pushReplacement(context, new MaterialPageRoute(
-                        builder: (context) =>
-                        new Login())
-                        );
-                      },
-                    ),
-                  ],
-                ),
-            ],
+              ),
+              delay: 100,
+            ),
           ),
         ),
-        delay: 100,
-        ),
-      ),
-    );
+        onWillPop: () {
+          DateTime now = DateTime.now();
+          if (currentBackPressTime == null ||
+              now.difference(currentBackPressTime) > Duration(seconds: 2)) {
+            currentBackPressTime = now;
+            Fluttertoast.showToast(msg: "Are you sure want to back");
+            return Future.value(false);
+          }
+          SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+          return Future.value(true);
+        });
   }
-
 }

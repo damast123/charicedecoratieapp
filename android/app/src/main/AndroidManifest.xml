@@ -7,10 +7,15 @@
          additional functionality it is fine to subclass or reimplement
          FlutterApplication and put your custom class here. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <application
         android:name=".Application"
         android:label="charicedecoratieapp"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/launcher_icon">
+        <meta-data android:name="com.google.android.geo.API_KEY" android:value="AIzaSyBFib6U1jD41vFahReMNicey6c_7DVerl4"/>
         <activity
             android:name=".MainActivity"
             android:launchMode="singleTop"
@@ -22,6 +27,7 @@
                  until Flutter renders its first frame. It can be removed if
                  there is no splash screen (such as the default splash screen
                  defined in @style/LaunchTheme). -->
+
             <meta-data
                 android:name="io.flutter.app.android.SplashScreenUntilFirstFrame"
                 android:value="true" />
@@ -34,5 +40,6 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
     </application>
 </manifest>

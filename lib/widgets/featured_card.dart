@@ -1,28 +1,40 @@
-
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:charicedecoratieapp/Konsumen/home.dart';
+import 'package:charicedecoratieapp/koneksi.dart';
 import 'package:flutter/material.dart';
 import 'package:charicedecoratieapp/Konsumen/homePaketJenis.dart';
 
 class FeaturedCard extends StatelessWidget {
-  final String name;
-  final String id;
-  final String picture;
+  String name = "";
+  String id = "";
+  String picture = "";
+  String usern = "";
 
-  FeaturedCard({@required this.name,@required this.id,@required this.picture});
+  FeaturedCard(
+      {@required this.name,
+      @required this.id,
+      @required this.picture,
+      @required this.usern});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.all(4),
       child: InkWell(
-        onTap: (){
-          Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(builder: (context) => new home_paket_jenis(value: id,)));
+        onTap: () {
+          Navigator.of(context, rootNavigator: true)
+              .pushReplacement(MaterialPageRoute(
+            builder: (context) => home_paket_jenis(
+              val: id,
+              usern: usern,
+            ),
+          ));
         },
         child: Container(
           decoration: BoxDecoration(
             boxShadow: [
               BoxShadow(
-                color:
-                Color.fromARGB(62, 168, 174, 201),
+                color: Color.fromARGB(62, 168, 174, 201),
                 offset: Offset(0, 9),
                 blurRadius: 14,
               ),
@@ -32,13 +44,15 @@ class FeaturedCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             child: Stack(
               children: <Widget>[
-                Image.asset(
-                  "assets/images/charicedecor.jpg",
+                CachedNetworkImage(
                   height: 220,
                   width: 200,
                   fit: BoxFit.cover,
+                  imageUrl: koneksi.getImageJenis(picture),
+                  placeholder: (context, url) =>
+                      new CircularProgressIndicator(),
+                  errorWidget: (context, url, error) => new Icon(Icons.error),
                 ),
-
                 Align(
                   alignment: Alignment.bottomCenter,
                   child: Container(
@@ -64,25 +78,21 @@ class FeaturedCard extends StatelessWidget {
                           ],
                         ),
                       ),
-
                       child: Padding(
                           padding: const EdgeInsets.only(top: 8.0),
-                          child: Container()
-                      )),
+                          child: Container())),
                 ),
-
                 Align(
                   alignment: Alignment.bottomLeft,
                   child: Padding(
-                      padding: const EdgeInsets.only(left:8.0),
-                      child: RichText(text: TextSpan(children: [
-                        TextSpan(text: '$name \n', style: TextStyle(fontSize: 18)),
+                      padding: const EdgeInsets.only(left: 8.0),
+                      child: RichText(
+                          text: TextSpan(children: [
+                        TextSpan(
+                            text: '$name \n', style: TextStyle(fontSize: 18)),
                         // TextSpan(text: '\$${price.toString()} \n', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-
-                      ]))
-                  ),
+                      ]))),
                 )
-
               ],
             ),
           ),
